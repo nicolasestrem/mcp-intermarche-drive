@@ -1,0 +1,32 @@
+{
+  "name": "mcp-intermarche-drive",
+  "version": "0.1.0",
+  "description": "MCP server for Intermarché Courses — browser-backed product search and safe cart management",
+  "type": "module",
+  "bin": {
+    "mcp-intermarche-drive": "dist/src/index.js"
+  },
+  "files": ["dist/src", "README.md", "LICENSE", "NOTICE"],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "start": "node dist/src/index.js",
+    "smoke": "node scripts/smoke-test.mjs",
+    "smoke:live": "node scripts/live-smoke.mjs"
+  },
+  "keywords": ["mcp", "model-context-protocol", "intermarche", "drive", "grocery", "courses"],
+  "license": "MIT",
+  "engines": {"node": ">=22"},
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.21",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "@hono/node-server": "2.0.12"
+  }
+}

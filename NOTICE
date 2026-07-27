@@ -1,0 +1,7 @@
+This project uses concepts and selected CDP/throttling patterns from
+mcp-leclerc-drive by skunkobi, licensed under the MIT License:
+https://github.com/skunkobi/mcp-leclerc-drive
+
+The Intermarché API adapter and tool contract are an independent implementation.
+Intermarché and its trademarks belong to their respective owners. This project is
+unofficial and is not affiliated with or endorsed by Intermarché.
