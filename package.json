@@ -1,12 +1,12 @@
 {
   "name": "mcp-intermarche-drive",
   "version": "0.1.0",
-  "description": "MCP server for Intermarché Courses — browser-backed product search and safe cart management",
+  "description": "Local MCP server for Intermarché Courses with browser-backed product search and basket tools",
   "type": "module",
   "bin": {
     "mcp-intermarche-drive": "dist/src/index.js"
   },
-  "files": ["dist/src", "README.md", "LICENSE", "NOTICE"],
+  "files": ["dist/src", "docs", "README.md", "LICENSE", "NOTICE"],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
