@@ -11,7 +11,24 @@ import {
 } from "./normalize.js";
 
 const ORIGIN = "https://www.intermarche.com";
+const CAPTCHA_HOST = "captcha-delivery.com";
 const RETRYABLE = new Set([403, 429]);
+
+/**
+ * True when the tab is actually on a DataDome challenge page (captcha-delivery.com
+ * or a subdomain such as geo.captcha-delivery.com). Parses the URL and compares the
+ * hostname exactly so lookalike hosts (captcha-delivery.com.evil.example) or URL
+ * fragments mentioning the domain (?u=captcha-delivery.com) never match.
+ */
+function isCaptchaPage(rawUrl: string): boolean {
+  try {
+    const hostname = new URL(rawUrl).hostname.toLowerCase();
+    return hostname === CAPTCHA_HOST || hostname.endsWith(`.${CAPTCHA_HOST}`);
+  } catch {
+    return false;
+  }
+}
+
 const productEndpoint = (pdvRef: string) =>
   `${ORIGIN}/api/service/produits/v4/pdvs/${encodeURIComponent(pdvRef)}/products/byKeywordAndCategory`;
 const cartEndpoint = (pdvRef: string) =>
@@ -85,7 +102,7 @@ export class IntermarcheClient implements GroceryClient {
     }
     try {
       const context = await this.context();
-      const captcha = /captcha-delivery\.com|geo\.captcha-delivery\.com/i.test(context.url);
+      const captcha = isCaptchaPage(context.url);
       return {
         connected: true,
         url: context.url,
@@ -202,7 +219,7 @@ export class IntermarcheClient implements GroceryClient {
 
   private async requireStoreContext(): Promise<BrowserContext> {
     const context = await this.context();
-    if (/captcha-delivery\.com/i.test(context.url)) {
+    if (isCaptchaPage(context.url)) {
       throw new Error("Challenge DataDome détecté. Résous-le manuellement dans l'unique onglet Chromium, puis réessaie.");
     }
     if (!context.pdvRef) {

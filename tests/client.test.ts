@@ -22,9 +22,10 @@ class FakeBrowser implements BrowserPort {
   calls: Array<{ url: string; method: string; body?: string; headers?: Record<string, string> }> = [];
   quantity = 1;
   acceptSubstitution = true;
+  tabUrl = "https://www.intermarche.com/drive-catalogue";
 
   async status() {
-    return { connected: true, url: "https://www.intermarche.com/drive-catalogue", title: "Intermarché" };
+    return { connected: true, url: this.tabUrl, title: "Intermarché" };
   }
 
   async evaluate<T>(expression: string): Promise<T> {
@@ -34,7 +35,7 @@ class FakeBrowser implements BrowserPort {
     }
     if (expression.includes("url:location.href")) {
       return {
-        url: "https://www.intermarche.com/drive-catalogue",
+        url: this.tabUrl,
         title: "Intermarché",
         session: {
           "itm-cart-id": "cart-1",
@@ -153,6 +154,53 @@ test("concurrent cart mutations serialize the full read-modify-write cycle", asy
   assert.equal(first.quantityTotal, 3);
   assert.equal(second.quantityTotal, 5);
   assert.equal(browser.quantity, 5);
+});
+
+test("browserStatus flags a real DataDome challenge page", async () => {
+  const browser = new FakeBrowser();
+  browser.tabUrl = "https://geo.captcha-delivery.com/captcha/?initialCid=cid&hash=abc";
+  const client = new IntermarcheClient(baseConfig, browser);
+  const status = await client.browserStatus();
+  assert.equal(
+    status.actionRequired,
+    "Résous le challenge DataDome dans l'unique onglet Chromium.",
+  );
+});
+
+test("browserStatus does not flag lookalike hosts or query-string mentions", async () => {
+  for (const tabUrl of [
+    "https://captcha-delivery.com.evil.example/",
+    "https://www.intermarche.com/drive-catalogue?u=geo.captcha-delivery.com",
+    "https://evil.example/?redirect=https%3A%2F%2Fgeo.captcha-delivery.com%2Fcaptcha",
+  ]) {
+    const browser = new FakeBrowser();
+    browser.tabUrl = tabUrl;
+    const client = new IntermarcheClient(baseConfig, browser);
+    const status = await client.browserStatus();
+    assert.notEqual(
+      status.actionRequired,
+      "Résous le challenge DataDome dans l'unique onglet Chromium.",
+      `tabUrl ${tabUrl} must not be treated as a DataDome challenge`,
+    );
+  }
+});
+
+test("searchProducts throws on a real DataDome challenge but runs on lookalike hosts", async () => {
+  const challenge = new FakeBrowser();
+  challenge.tabUrl = "https://geo.captcha-delivery.com/captcha/?initialCid=cid";
+  const challengeClient = new IntermarcheClient(baseConfig, challenge);
+  await assert.rejects(() => challengeClient.searchProducts("orangina"), /DataDome/);
+
+  const apex = new FakeBrowser();
+  apex.tabUrl = "https://captcha-delivery.com/challenge";
+  const apexClient = new IntermarcheClient(baseConfig, apex);
+  await assert.rejects(() => apexClient.searchProducts("orangina"), /DataDome/);
+
+  const lookalike = new FakeBrowser();
+  lookalike.tabUrl = "https://captcha-delivery.com.evil.example/";
+  const lookalikeClient = new IntermarcheClient(baseConfig, lookalike);
+  const products = await lookalikeClient.searchProducts("orangina");
+  assert.equal(products[0].id, "P1");
 });
 
 function response(body: unknown): FetchResponse {
